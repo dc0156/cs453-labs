@@ -178,9 +178,40 @@ npm run test:watch
 Answer the following questions in your submission:
 
 1. What is the difference between the client and the server?
+The server waits for incoming TCP connections and processes requests. The client connects to the server, sends commands, and receives responses.
+
 2. Why does the server need to keep running after handling one request?
+The server must continue running so it can process additional requests from connected clients and accept new client connections.
+
 3. What happens if two clients connect at the same time?
+The server creates a separate socket connection for each client. Each client can communicate with the server independently.
+
 4. How is this different from HTTP?
+This application uses a custom text-based protocol directly over TCP. HTTP is a standardized protocol built on top of TCP that uses request methods, headers, status codes, and structured messages.
+
+## Final Protocol Description
+The server accepts one command per line. Commands are case-insensitive.
+
+Supported Commands
+
+ECHO	
+Returns the text unchanged	
+ECHO hello → hello
+
+UPPER	
+Converts text to uppercase	UPPER hello → HELLO
+
+LOWER	
+Converts text to lowercase	LOWER HELLO → hello
+
+QUIT	
+Returns a goodbye message and closes the connection	
+QUIT → Goodbye.
+
+Error Handling
+
+Empty input returns ERROR empty command
+Unknown commands return ERROR unknown command: <command>
 
 ## Submission
 
