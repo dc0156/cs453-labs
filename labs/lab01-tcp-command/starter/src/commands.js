@@ -5,28 +5,24 @@ export function handleCommand(line) {
         return "ERROR empty command";
     }
 
-    const [command, ...parts] = trimmed.split(" ");
+    const [command, ...parts] = trimmed.split(/\s+/);
     const argument = parts.join(" ");
 
     switch (command.toUpperCase()) {
         case "ECHO":
             return argument;
 
-        // TODO: implement UPPER
-        // Example:
-        // UPPER hello -> HELLO
+        case "UPPER":
+            return argument.toUpperCase();
 
-        // TODO: implement LOWER
-        // Example:
-        // LOWER HELLO -> hello
+        case "LOWER":
+            return argument.toLowerCase();
 
-        // TODO: implement REVERSE
-        // Example:
-        // REVERSE hello -> olleh
+        case "REVERSE":
+            return argument.split("").reverse().join("");
 
-        // TODO: implement TIME
-        // Example:
-        // TIME -> current server time
+        case "TIME":
+            return new Date().toString();
 
         case "QUIT":
             return "Goodbye.";

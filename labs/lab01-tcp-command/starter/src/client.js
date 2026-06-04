@@ -19,7 +19,7 @@ const rl = readline.createInterface({
 socket.on("data", (data) => {
   process.stdout.write(data);
 
-  if (!socket.destroyed) {
+  if (!socket.destroyed && !rl.closed) {
     rl.prompt();
   }
 });
