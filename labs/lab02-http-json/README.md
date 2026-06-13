@@ -308,3 +308,26 @@ npm test
 runs successfully.
 
 Submit your GitHub link in the Canvas assignment for this lab.
+
+
+## Reflection Questions
+
+1. What is the difference between a TCP message and an HTTP request?
+
+A TCP message is raw data sent over a socket. An HTTP request is a structured message that uses TCP but adds a method, path, headers, status codes, and optional body content.
+
+2. What does the Content-Type: application/json header tell the server?
+
+It tells the server that the request body is formatted as JSON, so the server should parse the body as JSON data.
+
+3. Why should a server return different HTTP status codes for different situations?
+
+Different status codes help the client understand what happened. For example, 200 means the request succeeded, 400 means the client sent bad input, and 404 means the requested route was not found.
+
+4. What happens if the client sends invalid JSON?
+
+The server should catch the parsing error and return a JSON error response instead of crashing. In this lab, invalid JSON returns an error with a bad request status code.
+
+5. How is this lab different from Lab 1?
+
+Lab 1 used raw TCP sockets with a custom command format. Lab 2 uses HTTP, which has standard methods, paths, headers, status codes, and JSON request and response bodies.

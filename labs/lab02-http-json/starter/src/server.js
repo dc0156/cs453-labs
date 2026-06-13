@@ -1,18 +1,18 @@
 import http from "node:http";
 
-const DEFAULT_PORT = 3000;
+const HOST = process.env.HOST ?? "127.0.0.1";
+const PORT = Number(process.env.PORT ?? 3000);
 
 let requestCount = 0;
 
-export function sendJson(res, statusCode, body) {
+function sendJson(res, statusCode, body) {
     res.writeHead(statusCode, {
         "Content-Type": "application/json"
     });
-
     res.end(JSON.stringify(body));
 }
 
-export function readJsonBody(req) {
+function readRequestBody(req) {
     return new Promise((resolve, reject) => {
         let body = "";
 
@@ -21,13 +21,8 @@ export function readJsonBody(req) {
         });
 
         req.on("end", () => {
-            if (body.trim() === "") {
-                resolve({});
-                return;
-            }
-
             try {
-                resolve(JSON.parse(body));
+                resolve(body.length ? JSON.parse(body) : {});
             } catch {
                 reject(new Error("Invalid JSON"));
             }
@@ -37,80 +32,111 @@ export function readJsonBody(req) {
     });
 }
 
-export function handleCalculate(body) {
-    // TODO: Validate that operation, a, and b are present.
-    // TODO: Validate that a and b are numbers.
-    // TODO: Support add, subtract, multiply, and divide.
-    // TODO: Return an error for unsupported operations.
-    // TODO: Return an error for division by zero.
+export function resetState() {
+    requestCount = 0;
+}
 
-    return {
-        statusCode: 501,
-        response: {
-            error: "Calculation not implemented yet"
-        }
-    };
+export function handleCalculate(body) {
+    const { operation, a, b } = body;
+
+    if (!operation || a === undefined || b === undefined) {
+        return {
+            statusCode: 400,
+            response: { error: "Missing required fields" }
+        };
+    }
+
+    if (typeof a !== "number" || typeof b !== "number") {
+        return {
+            statusCode: 400,
+            response: { error: "a and b must be numbers" }
+        };
+    }
+
+    switch (operation) {
+        case "add":
+            return {
+                statusCode: 200,
+                response: { result: a + b }
+            };
+
+        case "subtract":
+            return {
+                statusCode: 200,
+                response: { result: a - b }
+            };
+
+        case "multiply":
+            return {
+                statusCode: 200,
+                response: { result: a * b }
+            };
+
+        case "divide":
+            if (b === 0) {
+                return {
+                    statusCode: 400,
+                    response: { error: "Division by zero" }
+                };
+            }
+
+            return {
+                statusCode: 200,
+                response: { result: a / b }
+            };
+
+        default:
+            return {
+                statusCode: 400,
+                response: { error: "Unsupported operation" }
+            };
+    }
 }
 
 export async function requestHandler(req, res) {
-    requestCount += 1;
+    requestCount++;
 
     const method = req.method;
-    const url = req.url;
+    const url = new URL(req.url, `http://${req.headers.host}`);
 
-    if (method === "GET" && url === "/health") {
-        sendJson(res, 200, { status: "ok" });
-        return;
-    }
-
-    if (method === "GET" && url === "/requests") {
-        // TODO: Return the current request count as JSON.
-        sendJson(res, 501, { error: "Request counter not implemented yet" });
-        return;
-    }
-
-    if (method === "POST" && url === "/echo") {
-        try {
-            const body = await readJsonBody(req);
-
-            // TODO: Return the parsed JSON body back to the client.
-            sendJson(res, 501, { error: "Echo not implemented yet" });
-        } catch {
-            sendJson(res, 400, { error: "Invalid JSON" });
+    try {
+        if (method === "GET" && url.pathname === "/health") {
+            return sendJson(res, 200, { status: "ok" });
         }
 
-        return;
-    }
+        if (method === "GET" && url.pathname === "/requests") {
+            return sendJson(res, 200, { count: requestCount });
+        }
 
-    if (method === "POST" && url === "/calculate") {
-        try {
-            const body = await readJsonBody(req);
+        if (method === "POST" && url.pathname === "/echo") {
+            const body = await readRequestBody(req);
+            return sendJson(res, 200, body);
+        }
+
+        if (method === "POST" && url.pathname === "/calculate") {
+            const body = await readRequestBody(req);
             const result = handleCalculate(body);
-
-            sendJson(res, result.statusCode, result.response);
-        } catch {
-            sendJson(res, 400, { error: "Invalid JSON" });
+            return sendJson(res, result.statusCode, result.response);
         }
 
-        return;
-    }
+        return sendJson(res, 404, { error: "Not found" });
+    } catch (err) {
+        if (err.message === "Invalid JSON") {
+            return sendJson(res, 400, { error: "Invalid JSON" });
+        }
 
-    sendJson(res, 404, { error: "Not found" });
+        return sendJson(res, 500, { error: "Internal server error" });
+    }
 }
 
 export function createServer() {
     return http.createServer(requestHandler);
 }
 
-export function resetState() {
-    requestCount = 0;
-}
-
 if (import.meta.url === `file://${process.argv[1]}`) {
-    const port = process.env.PORT || DEFAULT_PORT;
     const server = createServer();
 
-    server.listen(port, () => {
-        console.log(`HTTP JSON server listening on port ${port}`);
+    server.listen(PORT, HOST, () => {
+        console.log(`HTTP JSON server listening on http://${HOST}:${PORT}`);
     });
 }
